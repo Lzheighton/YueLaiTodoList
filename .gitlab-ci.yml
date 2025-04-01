@@ -1,13 +1,14 @@
+# .gitlab-ci.yml
 pages:
   stage: deploy
+  tags:
+    - shell  # 匹配你的shell类型runner标签
   script:
-    - mkdir .public
-    - cp -r ./* .public
-    - rm -rf public
-    - mv .public public
+    - mkdir -p public
+    # 排除CI文件本身和.git目录
+    - rsync -a --exclude='.git/' --exclude='.gitlab-ci.yml' --exclude='public/' ./ public/
   artifacts:
     paths:
       - public
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
+  only:
+    - master  # 你的目标分支名称
