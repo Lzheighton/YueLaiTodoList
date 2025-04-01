@@ -7,7 +7,8 @@ function addTodo(){
     const todoText = todoInput.value.trim();
     // trim方法来自字符串，用于去除字符串首尾的空白字符，返回新字符串
     if(todoText === ''){
-        alert("输入字段为空！");
+        todoInput.style.borderColor = 'red';
+        showError("输入字段为空！");
         return;
     }
     todoInput.value = "";
@@ -27,4 +28,11 @@ function addTodo(){
     })
 
     todoInput.focus();
+}
+
+function showError(msg){
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'Error';
+    errorDiv.textContent = msg;
+    todoInput.parentNode.appendChild(errorDiv);
 }
