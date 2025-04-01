@@ -1,6 +1,6 @@
-//从HTML页面获取DOM元素
-const ul = document.querySelector('ul');
-const todoInput = document.querySelector('input');
+//从HTML页面获取DOM元素引用
+const ul = document.getElementById('todoUl');
+const todoInput = document.getElementById('todoInput');
 
 function addTodo(){
     // 获取用户输入
