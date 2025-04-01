@@ -1,13 +1,26 @@
+# 使用轻量级Alpine镜像
+image: alpine:latest
+
+# 定义缓存策略（可选）
+cache:
+  paths:
+    - public/
+
+stages:
+  - deploy
+
 pages:
   stage: deploy
   script:
-    - mkdir .public
-    - cp -r ./* .public
-    - rm -rf public
-    - mv .public public
+    # 安装必要工具
+    - apk add --no-cache git bash
+    # 创建发布目录
+    - mkdir -p public
+    # 复制所有文件到发布目录（排除.git等）
+    - shopt -s extglob
+    - cp -r !(.git*|.gitlab-ci.yml) public/
   artifacts:
     paths:
       - public
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
+  only:
+    - master
