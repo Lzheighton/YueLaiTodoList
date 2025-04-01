@@ -6,11 +6,11 @@ function addTodo(){
     // 获取用户输入
     const todoText = todoInput.value.trim();
     // trim方法来自字符串，用于去除字符串首尾的空白字符，返回新字符串
-    todoInput.value = "";
-    if(todoText === null){
+    if(todoText === ''){
         alert("输入字段为空！");
         return;
     }
+    todoInput.value = "";
 
     const todoItem = document.createElement('li');
     const todoListText = document.createElement('span');
