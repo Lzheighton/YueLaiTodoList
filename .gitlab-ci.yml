@@ -1,26 +1,14 @@
-# 使用轻量级Alpine镜像
-image: alpine:latest
-
-# 定义缓存策略（可选）
-cache:
-  paths:
-    - public/
-
-stages:
-  - deploy
-
+# .gitlab-ci.yml
 pages:
   stage: deploy
+  tags:
+    - shell  # 匹配你的shell类型runner标签
   script:
-    # 安装必要工具
-    - apk add --no-cache git bash
-    # 创建发布目录
     - mkdir -p public
-    # 复制所有文件到发布目录（排除.git等）
-    - shopt -s extglob
-    - cp -r !(.git*|.gitlab-ci.yml) public/
+    # 排除CI文件本身和.git目录
+    - rsync -a --exclude='.git/' --exclude='.gitlab-ci.yml' --exclude='public/' ./ public/
   artifacts:
     paths:
       - public
   only:
-    - master
+    - master  # 你的目标分支名称
