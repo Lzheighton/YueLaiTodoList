@@ -52,5 +52,3 @@ function clearError(){
 todoInput.addEventListener('keypress', (e)=>{
     if(e.key === 'Enter') addTodo();
 })
-
-todoInput.add
