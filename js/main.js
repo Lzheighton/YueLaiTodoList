@@ -1,16 +1,13 @@
 //从HTML页面获取DOM元素引用
 const ul = document.getElementById('todoUl');
 const todoInput = document.getElementById('todoInput');
+const errorContainer = document.getElementById('todoInput-error');
 
 function addTodo(){
     // 获取用户输入
     const todoText = todoInput.value.trim();
     // trim方法来自字符串，用于去除字符串首尾的空白字符，返回新字符串
-    if(todoText === ''){
-        todoInput.style.borderColor = 'red';
-        showError("输入字段为空！");
-        return;
-    }
+    if(!validInput()) return;
     todoInput.value = "";
 
     const todoItem = document.createElement('li');
@@ -24,15 +21,36 @@ function addTodo(){
     ul.appendChild(todoItem);
 
     deleteBtn.addEventListener('click', ()=>{
-      ul.removeChild(todoItem);
+      todoItem.remove();
     })
 
     todoInput.focus();
 }
 
-function showError(msg){
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'Error';
-    errorDiv.textContent = msg;
-    todoInput.parentNode.appendChild(errorDiv);
+function validInput(){
+    if(!todoInput.value.trim()){
+        showError('输入字段为空');
+        todoInput.classList.add('shake-error');
+        setTimeout(()=> todoInput.classList.remove('shake-error'), 500);
+        return false
+    }
+    clearError()
+    return true;
 }
+
+function showError(msg){
+    errorContainer.textContent = msg;
+    errorContainer.style.display = 'block';
+    todoInput.setAttribute('aria-invalid', 'true');
+}
+
+function clearError(){
+    errorContainer.style.display = 'none';
+    todoInput.removeAttribute('aria-invalid');
+}
+
+todoInput.addEventListener('keypress', (e)=>{
+    if(e.key === 'Enter') addTodo();
+})
+
+todoInput.add

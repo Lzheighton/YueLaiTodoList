@@ -1,15 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Yuelai TodoList</title>
+    <title>悦来待办 | Yuelai TodoList</title>
+    <!--引用外部CSS样式表，rel定义文档与被链接资源的关系，href定义文件路径-->
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-    <div class = 'container'>
+    <div class = "container">
         <fieldset>
             <legend>欢迎使用悦来待办</legend>
                 <input id="todoInput" type="text" placeholder="输入待办事项...">
                 <button onclick="addTodo()">添加</button>
+                <div class="error-container" id="todoInput-error"></div>
                 <ul id="todoUl">
                     <!--ul标签，无序列表-->
                 </ul>
