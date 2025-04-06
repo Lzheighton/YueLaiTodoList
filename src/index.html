@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>悦来待办 | Yuelai TodoList</title>
+    <!--引用外部CSS样式表，rel定义文档与被链接资源的关系，href定义文件路径-->
+    <link rel="stylesheet" href="output.css">
+</head>
+<body>
+    <div class = "mx-auto flex max-w-sm items-center gap-x-4 rounded-xl bg-white p-6 shadow-lg outline outline-black/5 ">
+        <div>
+            <div class="text-x1 font-medium text-black">欢迎使用悦来待办</div>
+            <input id="todoInput" type="text" placeholder="输入待办事项...">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="addTodo()">添加</button>
+            <div class="error-container" id="todoInput-error"></div>
+            <ul id="todoUl">
+                <!--ul标签，无序列表-->
+            </ul>
+        </div>
+        </div>
+    <script src="main.js"></script>
+</body>
+</html>

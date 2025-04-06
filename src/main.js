@@ -18,6 +18,7 @@ function addTodo(){
     todoListText.textContent = todoText;
     todoItem.appendChild(deleteBtn);
     deleteBtn.textContent = '删除';
+    deleteBtn.className = 'bg-blue-500 hover:bg-red-500 text-white font-bold py-1 px-2 rounded';
     ul.appendChild(todoItem);
 
     deleteBtn.addEventListener('click', ()=>{
@@ -30,6 +31,9 @@ function addTodo(){
 function validInput(){
     if(!todoInput.value.trim()){
         showError('输入字段为空');
+        //为高频事件添加防抖
+        //通过延迟执行来优化高频事件处理（键盘输入，窗口缩放）
+        //只有在事件停止触发后经过预定时间，才会执行一次处理函数
         todoInput.classList.add('shake-error');
         setTimeout(()=> todoInput.classList.remove('shake-error'), 500);
         return false
@@ -49,6 +53,7 @@ function clearError(){
     todoInput.removeAttribute('aria-invalid');
 }
 
+//回车键提交支持
 todoInput.addEventListener('keypress', (e)=>{
     if(e.key === 'Enter') addTodo();
 })

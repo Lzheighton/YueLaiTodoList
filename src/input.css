@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* 错误提示 */
 .error-container {
     color: #d63031;
