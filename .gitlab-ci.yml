@@ -6,7 +6,7 @@ pages:
   script:
     - mkdir -p public
     # 排除CI文件本身和.git目录
-    - rsync -a --exclude='.git/' --exclude='.gitlab-ci.yml' --exclude='public/' ./ public/
+    - rsync ./src -a --exclude='.git/' --exclude='.gitlab-ci.yml' --exclude='public/' ./ public/
   artifacts:
     paths:
       - public
