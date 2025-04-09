@@ -2,22 +2,121 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>悦来待办 | Yuelai TodoList</title>
-    <!--引用外部CSS样式表，rel定义文档与被链接资源的关系，href定义文件路径-->
     <link rel="stylesheet" href="output.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
-<body>
-    <div class = "mx-auto flex max-w-sm items-center gap-x-4 rounded-xl bg-white p-6 shadow-lg outline outline-black/5 ">
-        <div>
-            <div class="text-x1 font-medium text-black">欢迎使用悦来待办</div>
-            <input id="todoInput" type="text" placeholder="输入待办事项...">
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="addTodo()">添加</button>
-            <div class="error-container" id="todoInput-error"></div>
-            <ul id="todoUl">
-                <!--ul标签，无序列表-->
-            </ul>
+<body class="bg-gray-50 min-h-screen">
+<div class="container mx-auto px-4 py-8">
+    <!-- 标题区域 -->
+    <h1 class="text-4xl font-semibold text-center text-gray-800 mb-8">悦来待办</h1>
+
+    <!-- 顶部导航/用户状态 -->
+    <div class="max-w-2xl mx-auto mb-6 flex justify-end">
+        <button id="openLoginBtn" class="text-blue-500 hover:text-blue-700 font-medium">
+            登录/注册
+        </button>
+    </div>
+
+    <!-- 输入表单区域 -->
+    <div class="max-w-xl mx-auto mb-8">
+        <form id="todoForm" class="flex flex-col sm:flex-row gap-3" onsubmit="event.preventDefault(); addTodo();">
+            <div class="flex-grow">
+                <input
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        id="todoInput"
+                        type="text"
+                        placeholder="输入待办事项...">
+                <div id="todoInput-error" class="text-red-500 text-sm mt-1 h-5"></div>
+            </div>
+
+            <input
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    id="dateInput"
+                    type="date">
+
+            <button
+                    type="submit"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200">
+                添加
+            </button>
+        </form>
+    </div>
+
+    <!-- 待办事项区域 -->
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow">
+        <!-- 今日待办标题 -->
+        <div class="border-b border-gray-200 px-6 py-4">
+            <h2 class="text-xl font-semibold text-gray-800">今日待办</h2>
         </div>
+
+        <!-- 待办列表 -->
+        <ul id="todoUl" class="divide-y divide-gray-200">
+        </ul>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="px-6 py-12 text-center text-gray-500">
+            <p>暂无待办事项</p>
+            <p class="text-sm mt-2">添加你的第一个任务吧！</p>
         </div>
-    <script src="main.js"></script>
+    </div>
+</div>
+
+<!--统一的登录/注册模态窗口-->
+<!--backdrop-blur-md 毛玻璃效果-->
+<div id="loginModal" class="hidden fixed inset-0 backdrop-blur-md bg-white/30 z-50 flex items-center justify-center">
+    <div class="relative bg-white w-[90%] max-w-md mx-auto rounded-lg shadow-xl">
+        <!--关闭按钮-->
+        <span id="closeModal" class="absolute right-5 top-4 text-gray-400 text-3xl font-bold hover:text-black cursor-pointer">&times;</span>
+
+        <!-- 登录/注册表单 -->
+        <div class="px-8 py-8">
+            <!-- 切换标签 -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button id="loginTab" class="px-4 py-2 border-b-2 border-blue-500 text-blue-600 font-medium">登录</button>
+                <button id="registerTab" class="px-4 py-2 text-gray-500 font-medium">注册</button>
+            </div>
+
+            <!-- 表单标题 -->
+            <h2 id="formTitle" class="text-2xl font-bold text-center text-gray-800 mb-6">登录至悦来待办</h2>
+
+            <form id="authForm" class="space-y-6">
+                <div>
+                    <label for="email" class="block mb-2 text-gray-600">邮箱地址</label>
+                    <input type="email" id="email" name="email"
+                           class="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="请输入您的邮箱"
+                           required>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="verificationCode" class="text-gray-600">验证码</label>
+                        <button type="button" id="getCodeBtn" class="text-sm text-blue-600 hover:text-blue-800">
+                            获取验证码
+                        </button>
+                    </div>
+                    <input type="text" id="verificationCode" name="verificationCode"
+                           class="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="请输入验证码"
+                           required>
+                </div>
+
+                <div class="flex items-center" id="rememberMeContainer">
+                    <input type="checkbox" id="remember" name="remember"
+                           class="h-4 w-4 text-blue-500 border-gray-300 rounded">
+                    <label for="remember" class="ml-2 text-gray-600">记住我</label>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md transition-colors duration-200">
+                    登录
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="main.js"></script>
 </body>
 </html>
