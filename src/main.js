@@ -28,11 +28,16 @@ const registerTab = document.getElementById('registerTab');
 const submitBtn = document.getElementById('submitBtn');
 const getCodeBtn = document.getElementById('getCodeBtn');
 
+//记住我，激活js长轮询保持登录状态
 const rememberMeContainer = document.getElementById('rememberMeContainer');
+
+//首个输入框，根据登录/注册改变
+const firstTip = document.getElementById('firstTip');
+const firstInput = document.getElementById('firstInput');
 
 //YuelaiTodo后端实例
 const yueLaiGroup = axios.create({
-    baseURL: 'http://ecc.yuelaigroup.com:8880/api/v1',
+    baseURL: 'https://demo.yuelaigroup.com:8500/api/v1',
     setTimeout: 3000
 })
 
@@ -40,7 +45,11 @@ const yueLaiGroup = axios.create({
 document.addEventListener('DOMContentLoaded', () => {
     //DOM加载完毕
     updateEmptyState();
+    checkLoginStatus();
 });
+
+//登录状态变量，用于跟踪模态窗口状态
+var isLogin = true;
 
 //用户登录，打开模态窗口
 openLoginBtn.addEventListener('click', () => {
@@ -70,8 +79,12 @@ loginTab.addEventListener('click', function() {
     registerTab.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
     registerTab.classList.add('text-gray-500');
 
+    isLogin = true;
+
     formTitle.textContent = '登录到悦来待办';
     submitBtn.textContent = '登录';
+    firstTip.textContent = '用户uuid';
+    firstInput.placeholder = '请输入用户uuid';
     rememberMeContainer.classList.remove('hidden');
 });
 
@@ -81,25 +94,38 @@ registerTab.addEventListener('click', () => {
     loginTab.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
     loginTab.classList.add('text-gray-500');
 
+    isLogin = false;
+
     formTitle.textContent = '加入悦来待办';
     submitBtn.textContent = '注册';
-    rememberMeContainer.classList.remove('hidden');
+    firstTip.textContent = '邮箱地址';
+    firstInput.placeholder = '请输入邮箱地址';
+    rememberMeContainer.classList.add('hidden');
 })
 
 //发送验证码
 getCodeBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    const email = document.getElementById('email').value;
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if(!email || !emailRegex.test(email)) {
-        alert("请输入有效的邮箱地址");
-        return;
+    const firstValue = document.getElementById('firstInput').value;
+
+    if(isLogin) {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if(!firstValue || !uuidRegex.test(firstValue)) {
+            alert("请输入有效的uuid");
+            return;
+        }
+    }else{
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if(!firstValue || !emailRegex.test(firstValue)) {
+            alert("请输入有效的邮箱地址");
+            return;
+        }
     }
 
     //再次获取验证码计时器
     let countdown = 300;
-    getCodeBtn.diabled = true;
+    getCodeBtn.disabled = true;
     getCodeBtn.textContent = `${countdown}秒后重新获取`;
 
     const timer = setInterval(() => {
@@ -113,38 +139,86 @@ getCodeBtn.addEventListener('click', (e) => {
         }
     }, 1000)
 
-    yueLaiGroup.post('/auth/send', {
-        mail: email,
-        uuid: null
-    })
-        .catch(error => {
-            alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' + error.message)
+    //分情况发送请求，是否为登录状态
+    if(isLogin) {
+        yueLaiGroup.post('/auth/send', {
+            mail: null,
+            uuid: firstValue
         })
+            .catch(error => {
+                alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' + error.message);
+            })
+    }else{
+        yueLaiGroup.post('/auth/send', {
+            mail: firstValue,
+            uuid: null
+        })
+            .catch(error => {
+                alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' + error.message);
+            })
+    }
+
 })
 
 //提交表单
 authForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    //获取应该被封装至函数内，以确保其有效
-    const email = document.getElementById('email').value;
+    const firstValue = document.getElementById('firstInput').value;
     const code = document.getElementById('verificationCode').value;
-    //通过判断当前tab的css原子类判断当前是登录还是注册
-    const isLogin = loginTab.classList.contains('border-b-2');
-
     if(isLogin) {
-
-    }else{
-        yueLaiGroup.post('/register', {
-            "code": code,
-            "mail": email
+        yueLaiGroup.post('/login', {
+            code: code,
+            uuid: firstValue,
         })
             .then(res => {
                 console.log(res);
+                localStorage.setItem('uuid', res.data.data.uuid);
             })
             .catch(error => {
-                alert(error.message);
+                alert("登录过程出现错误！请反馈管理员，有效的错误信息：" + error.message);
+            })
+    }else{
+        yueLaiGroup.post('/register', {
+            code: code,
+            mail: firstValue,
+        })
+            .then(res => {
+                localStorage.setItem('uuid', res.data.data.uuid);
+            })
+            .catch(error => {
+                alert("注册过程出现错误！请反馈管理员，有效的错误信息：" + error.message);
             })
     }
+})
+
+//检查登录状态
+function checkLoginStatus(){
+    const openLoginBtn = document.getElementById('openLoginBtn');
+    const userInfo = document.getElementById('userInfo');
+    const userUuid = document.getElementById('userUuid');
+
+    const uuid = localStorage.getItem('uuid');
+
+    if(uuid){
+        //当前localstorage存在uuid，已登录状态
+        openLoginBtn.classList.add('hidden');
+        userInfo.classList.remove('hidden');
+        userUuid.textContent = uuid;
+    }else{
+        openLoginBtn.classList.remove('hidden');
+        userInfo.classList.add('hidden');
+    }
+}
+
+//登出当前用户
+document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    localStorage.removeItem('uuid');
+    localStorage.removeItem('token');
+
+    //更新登录状态
+    checkLoginStatus();
+
+    //window.location.reload();
 })
 
 //回车键提交支持
