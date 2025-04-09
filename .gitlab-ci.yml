@@ -2,13 +2,15 @@
 pages:
   stage: deploy
   tags:
-    - shell  # 匹配你的shell类型runner标签
+    - shell  # 根据实际Runner环境调整（如使用docker则改为docker）
   script:
+    # 创建发布目录（GitLab Pages强制要求必须用public）
     - mkdir -p public
-    # 排除CI文件本身和.git目录
-    - rsync -a --exclude='.git/' --exclude='.gitlab-ci.yml' --exclude='public/' ./ public/
+    
+    # 将src目录内容同步到public（保留原始结构）
+    - rsync -av --exclude='.git*' --exclude='.gitlab-ci.yml' --exclude='public/' src/ public/
   artifacts:
     paths:
       - public
   only:
-    - master  # 你的目标分支名称
+    - master  # 或改为你的主分支名称（如main）
