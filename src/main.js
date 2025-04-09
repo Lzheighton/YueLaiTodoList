@@ -97,6 +97,7 @@ getCodeBtn.addEventListener('click', (e) => {
         return;
     }
 
+    //再次获取验证码计时器
     let countdown = 300;
     getCodeBtn.diabled = true;
     getCodeBtn.textContent = `${countdown}秒后重新获取`;
@@ -116,9 +117,34 @@ getCodeBtn.addEventListener('click', (e) => {
         mail: email,
         uuid: null
     })
-    .then(res => {
-        console.log(res);
-    })
+        .catch(error => {
+            alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' + error.message)
+        })
+})
+
+//提交表单
+authForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    //获取应该被封装至函数内，以确保其有效
+    const email = document.getElementById('email').value;
+    const code = document.getElementById('verificationCode').value;
+    //通过判断当前tab的css原子类判断当前是登录还是注册
+    const isLogin = loginTab.classList.contains('border-b-2');
+
+    if(isLogin) {
+
+    }else{
+        yueLaiGroup.post('/register', {
+            "code": code,
+            "mail": email
+        })
+            .then(res => {
+                console.log(res);
+            })
+            .catch(error => {
+                alert(error.message);
+            })
+    }
 })
 
 //回车键提交支持

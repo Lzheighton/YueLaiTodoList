@@ -302,6 +302,9 @@
   .h-5 {
     height: calc(var(--spacing) * 5);
   }
+  .h-12 {
+    height: calc(var(--spacing) * 12);
+  }
   .min-h-screen {
     min-height: 100vh;
   }
@@ -325,6 +328,9 @@
   }
   .max-w-xl {
     max-width: var(--container-xl);
+  }
+  .min-w-\[210px\] {
+    min-width: 210px;
   }
   .flex-grow {
     flex-grow: 1;
@@ -550,6 +556,9 @@
   .font-semibold {
     --tw-font-weight: var(--font-weight-semibold);
     font-weight: var(--font-weight-semibold);
+  }
+  .whitespace-nowrap {
+    white-space: nowrap;
   }
   .text-black {
     color: var(--color-black);

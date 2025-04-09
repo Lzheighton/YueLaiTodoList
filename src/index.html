@@ -19,26 +19,28 @@
         </button>
     </div>
 
-    <!-- 输入表单区域 -->
+    <!--输入表单区域-->
     <div class="max-w-xl mx-auto mb-8">
         <form id="todoForm" class="flex flex-col sm:flex-row gap-3" onsubmit="event.preventDefault(); addTodo();">
             <div class="flex-grow">
                 <input
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        class="w-full h-12 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-base"
                         id="todoInput"
                         type="text"
                         placeholder="输入待办事项...">
                 <div id="todoInput-error" class="text-red-500 text-sm mt-1 h-5"></div>
             </div>
 
+            <!-- 修改为日期+时间选择 -->
             <input
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    class="h-12 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-base min-w-[210px]"
                     id="dateInput"
-                    type="date">
+                    type="datetime-local"
+                    title="选择截止日期和时间">
 
             <button
                     type="submit"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200">
+                    class="h-12 bg-blue-500 hover:bg-blue-700 text-white font-bold px-6 rounded-lg transition duration-200 whitespace-nowrap">
                 添加
             </button>
         </form>
