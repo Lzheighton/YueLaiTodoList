@@ -182,8 +182,9 @@ authForm.addEventListener('submit', (e) => {
                     alert('登录请求出现错误！请反馈管理员，有效的错误信息：' + res.data.code + ':' + res.data.message);
                 }
 
-                localStorage.setItem('uuid', res.data.data.uuid);
+                document.cookie = 'token=' + encodeURIComponent(res.data.data.token);
 
+                localStorage.setItem('uuid', res.data.data.uuid);
                 window.location.reload();
             })
     }else{
@@ -196,8 +197,9 @@ authForm.addEventListener('submit', (e) => {
                     alert('注册请求出现错误！请反馈管理员，有效的错误信息：' + res.data.code + ':' + res.data.message);
                 }
 
-                localStorage.setItem('uuid', res.data.data.uuid);
+                document.cookie = 'token=' + encodeURIComponent(res.data.data.token);
 
+                localStorage.setItem('uuid', res.data.data.uuid);
                 window.location.reload();
             })
     }
