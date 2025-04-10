@@ -123,7 +123,34 @@ getCodeBtn.addEventListener('click', (e) => {
         }
     }
 
-    //再次获取验证码计时器
+    //分情况发送请求，是否为登录状态
+    if(isLogin) {
+        yueLaiGroup.post('/auth/send', {
+            mail: null,
+            uuid: firstValue
+        })
+            .then(res => {
+                timer();
+                if(res.data.code !== 2000){
+                    alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' + res.data.code + ':' + res.data.message);
+                }
+            })
+    }else{
+        yueLaiGroup.post('/auth/send', {
+            mail: firstValue,
+            uuid: null
+        })
+            .then(res => {
+                timer();
+                if(res.data.code !== 2000){
+                    alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' + res.data.code + ':' + res.data.message);
+                }
+            })
+    }
+})
+
+//再次获取验证码计时器，封装为函数
+function timer(){
     let countdown = 300;
     getCodeBtn.disabled = true;
     getCodeBtn.textContent = `${countdown}秒后重新获取`;
@@ -138,27 +165,7 @@ getCodeBtn.addEventListener('click', (e) => {
             getCodeBtn.textContent = '获取验证码';
         }
     }, 1000)
-
-    //分情况发送请求，是否为登录状态
-    if(isLogin) {
-        yueLaiGroup.post('/auth/send', {
-            mail: null,
-            uuid: firstValue
-        })
-            .catch(error => {
-                alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' + error.message);
-            })
-    }else{
-        yueLaiGroup.post('/auth/send', {
-            mail: firstValue,
-            uuid: null
-        })
-            .catch(error => {
-                alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' + error.message);
-            })
-    }
-
-})
+}
 
 //提交表单
 authForm.addEventListener('submit', (e) => {
@@ -171,11 +178,13 @@ authForm.addEventListener('submit', (e) => {
             uuid: firstValue,
         })
             .then(res => {
-                console.log(res);
+                if(res.data.code !== 2000){
+                    alert('登录请求出现错误！请反馈管理员，有效的错误信息：' + res.data.code + ':' + res.data.message);
+                }
+
                 localStorage.setItem('uuid', res.data.data.uuid);
-            })
-            .catch(error => {
-                alert("登录过程出现错误！请反馈管理员，有效的错误信息：" + error.message);
+
+                window.location.reload();
             })
     }else{
         yueLaiGroup.post('/register', {
@@ -183,10 +192,13 @@ authForm.addEventListener('submit', (e) => {
             mail: firstValue,
         })
             .then(res => {
+                if(res.data.code !== 2000){
+                    alert('注册请求出现错误！请反馈管理员，有效的错误信息：' + res.data.code + ':' + res.data.message);
+                }
+
                 localStorage.setItem('uuid', res.data.data.uuid);
-            })
-            .catch(error => {
-                alert("注册过程出现错误！请反馈管理员，有效的错误信息：" + error.message);
+
+                window.location.reload();
             })
     }
 })
@@ -211,14 +223,14 @@ function checkLoginStatus(){
 }
 
 //登出当前用户
-document.getElementById('logoutBtn').addEventListener('click', (e) => {
+document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.removeItem('uuid');
     localStorage.removeItem('token');
 
     //更新登录状态
     checkLoginStatus();
 
-    //window.location.reload();
+    window.location.reload();
 })
 
 //回车键提交支持
