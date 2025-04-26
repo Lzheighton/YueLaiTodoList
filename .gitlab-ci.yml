@@ -7,8 +7,13 @@ pages:
     # 创建发布目录（GitLab Pages强制要求必须用public）
     - mkdir -p public
     
-    # 将src目录内容同步到public（保留原始结构）
-    - rsync -av --exclude='.git*' --exclude='.gitlab-ci.yml' --exclude='public/' src/ public/
+    # 复制HTML、CSS和其他静态资源
+    - cp index.html public/
+    - cp -r css/ public/ || true
+    - cp -r assets/ public/ || true
+    
+    # 复制webpack构建后的JS文件
+    - cp -r dist/ public/
   artifacts:
     paths:
       - public
