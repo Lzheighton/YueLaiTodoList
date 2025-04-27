@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
   closeModalDiv.addEventListener('click', () => {
     loginModalDiv.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
+    clearCountdownTimer();
   });
 
   //点击背景时关闭模态窗口
@@ -78,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loginModalDiv.classList.add('hidden');
       document.body.classList.remove('overflow-hidden');
     }
+    clearCountdownTimer();
   });
 
   // 切换到登录页
@@ -238,10 +240,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 //登录状态变量，用于跟踪登录模态窗口的状态
 let isLogin: boolean = true;
+//全局变量用于存储计时器id
+let countdownTimer: number | null = null;
 
 //再次获取验证码计时器，封装为函数
 function timer() {
-  let countdown = 300;
+  //清除可能存在的旧计时器
+  if(countdownTimer !== null){
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  let countdown = 60;
   getCodeBtn.disabled = true;
   getCodeBtn.textContent = `${countdown}秒后重新获取`;
 
@@ -255,6 +265,19 @@ function timer() {
       getCodeBtn.textContent = '获取验证码';
     }
   }, 1000);
+}
+
+//清除定时器的函数
+function clearCountdownTimer():void {
+  if(countdownTimer !== null){
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  if(getCodeBtn){
+    getCodeBtn.disabled = false;
+    getCodeBtn.textContent = "获取验证码";
+  }
 }
 
 //检查登录状态
