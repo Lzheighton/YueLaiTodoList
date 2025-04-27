@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     closeModalDiv.addEventListener('click', () => {
         loginModalDiv.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
+        clearCountdownTimer();
     });
     //点击背景时关闭模态窗口
     loginModalDiv.addEventListener('click', (e) => {
@@ -68,8 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
             loginModalDiv.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
         }
+        clearCountdownTimer();
     });
-    // 切换到登录页
+    //切换到登录页
     loginTabBtn.addEventListener('click', function () {
         loginTabBtn.classList.add('border-b-2', 'border-blue-500', 'text-blue-600');
         registerTabBtn.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
@@ -148,8 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //登出当前用户
     (0, dom_1.$)('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('uuid');
-        //todo cookie的删除需要注意
-        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        localStorage.removeItem('token');
         //更新登录状态
         checkLoginStatus();
         window.location.reload();
@@ -177,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ':' +
                         res.data.message);
                 }
-                document.cookie = 'token=' + encodeURIComponent(res.data.data.token);
+                localStorage.setItem('token', res.data.data.token);
                 localStorage.setItem('uuid', res.data.data.uuid);
                 window.location.reload();
             });
@@ -195,18 +196,118 @@ document.addEventListener('DOMContentLoaded', () => {
                         ':' +
                         res.data.message);
                 }
-                document.cookie = 'token=' + encodeURIComponent(res.data.data.token);
+                localStorage.setItem('token', res.data.data.token);
                 localStorage.setItem('uuid', res.data.data.uuid);
                 window.location.reload();
             });
         }
     });
 });
-//登录状态变量，用于跟踪登录模态窗口的状态
 let isLogin = true;
+let countdownTimer = null;
+//本地维护数组，作为状态管理和离线缓存
+let todos = [];
+//初始化todo数据
+function loadTodos() {
+    yueLaiGroup.get('/todo/my')
+        .then(res => {
+        //response正常，直接加载获取到的todo
+        todos = res.data.data;
+        renderTodoList(todos);
+    })
+        .catch(() => {
+        //! 离线状态，从LocalStorage获取缓存的todo
+        const cachedTodos = JSON.parse(localStorage.getItem('todos') || '[]');
+        todos = cachedTodos;
+        renderTodoList(todos);
+    });
+}
+//通过传入todo数组刷新当前页面的todolist
+function renderTodoList(todos) {
+    todoUl.innerHTML = '';
+    if (todos.length === 0) {
+        updateEmptyState();
+        return;
+    }
+    for (let i = 0; i < todos.length; ++i) {
+        const todoText = todos[i].todoList;
+        const dateText = todos[i].deadline;
+        //li设置为flex容器，内容两端对齐
+        const todoItem = document.createElement('li');
+        todoItem.className = 'flex justify-between items-center px-6 py-4';
+        //左侧，待办内容
+        const todoSpan = document.createElement('span');
+        todoSpan.textContent = todoText;
+        todoItem.appendChild(todoSpan);
+        //每个待办的容器
+        const todoDiv = document.createElement('div');
+        todoDiv.className = 'flex items-center gap-3';
+        todoItem.append(todoDiv);
+        //截止日期
+        const dateSpan = document.createElement('span');
+        dateSpan.textContent = '截至:' + dateText;
+        dateSpan.className = 'text-gray-500 text-sm';
+        todoDiv.appendChild(dateSpan);
+        //删除按钮
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '删除';
+        deleteBtn.className =
+            'bg-blue-500 hover:bg-red-500 text-white font-bold py-1 px-3 rounded transition duration-200';
+        todoDiv.appendChild(deleteBtn);
+        deleteBtn.addEventListener('click', () => {
+            deleteTodo();
+        });
+        todoUl.appendChild(todoItem);
+    }
+}
+//添加待办
+function addTodo() {
+    // 获取用户输入
+    // trim方法用于去除字符串首尾的空白字符，返回新字符串
+    const todoText = todoInput.value.trim();
+    const dateText = dateInput.value.trim();
+    if (!(validInput(todoInput) && validInput(dateInput)))
+        return;
+    todoInput.value = '';
+    dateInput.value = '';
+    let token = localStorage.getItem('token');
+    //发送POST请求，添加todo
+    yueLaiGroup
+        .post('/todo/add', {
+        deadline: dateText,
+        todoList: todoText
+    }, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+        .then((res) => {
+        if (res.data.code !== 2000) {
+            alert('注册请求出现错误！请反馈管理员，有效的错误信息：' +
+                res.data.code +
+                ':' +
+                res.data.message);
+        }
+        todos = res.data.data;
+        localStorage.setItem('todos', JSON.stringify(todos));
+        renderTodoList(todos);
+    })
+        .finally(() => {
+        todoInput.focus();
+        updateEmptyState();
+    });
+}
+//删除待办
+function deleteTodo() {
+}
 //再次获取验证码计时器，封装为函数
 function timer() {
-    let countdown = 300;
+    //清除可能存在的旧计时器
+    if (countdownTimer !== null) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
+    let countdown = 60;
     getCodeBtn.disabled = true;
     getCodeBtn.textContent = `${countdown}秒后重新获取`;
     const timer = setInterval(() => {
@@ -218,6 +319,17 @@ function timer() {
             getCodeBtn.textContent = '获取验证码';
         }
     }, 1000);
+}
+//清除定时器的函数
+function clearCountdownTimer() {
+    if (countdownTimer !== null) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
+    if (getCodeBtn) {
+        getCodeBtn.disabled = false;
+        getCodeBtn.textContent = "获取验证码";
+    }
 }
 //检查登录状态
 function checkLoginStatus() {
@@ -244,47 +356,6 @@ function updateEmptyState() {
     else {
         emptyDiv.classList.add('hidden');
     }
-}
-function addTodo() {
-    // 获取用户输入
-    // trim方法用于去除字符串首尾的空白字符，返回新字符串
-    const todoText = todoInput.value.trim();
-    const dateText = dateInput.value.trim();
-    if (!validInput(todoInput))
-        return;
-    if (!validInput(dateInput))
-        return;
-    todoInput.value = '';
-    dateInput.value = '';
-    //li设置为flex容器，内容两端对齐
-    const todoItem = document.createElement('li');
-    todoItem.className = 'flex justify-between items-center px-6 py-4';
-    //左侧，待办内容
-    const todoSpan = document.createElement('span');
-    todoSpan.textContent = todoText;
-    todoItem.appendChild(todoSpan);
-    //每个待办的容器
-    const todoDiv = document.createElement('div');
-    todoDiv.className = 'flex items-center gap-3';
-    todoItem.append(todoDiv);
-    //截止日期
-    const dateSpan = document.createElement('span');
-    dateSpan.textContent = '截至:' + dateText;
-    dateSpan.className = 'text-gray-500 text-sm';
-    todoDiv.appendChild(dateSpan);
-    //删除按钮
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = '删除';
-    deleteBtn.className =
-        'bg-blue-500 hover:bg-red-500 text-white font-bold py-1 px-3 rounded transition duration-200';
-    todoDiv.appendChild(deleteBtn);
-    todoUl.appendChild(todoItem);
-    deleteBtn.addEventListener('click', () => {
-        todoItem.remove();
-        updateEmptyState();
-    });
-    todoInput.focus();
-    updateEmptyState();
 }
 //判断输入是否为空
 function validInput(input) {
