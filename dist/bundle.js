@@ -4053,7 +4053,7 @@ function addTodo() {
     yueLaiGroup
         .post('/todo/add', {
         deadline: dateText,
-        todoList: todoText
+        todolist: todoText
     }, {
         headers: {
             'Authorization': `Bearer ${token}`
@@ -4074,6 +4074,7 @@ function addTodo() {
         .finally(() => {
         todoInput.focus();
         updateEmptyState();
+        window.location.reload();
     });
 }
 //删除待办

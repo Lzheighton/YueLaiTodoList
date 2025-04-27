@@ -365,7 +365,7 @@ function addTodo() {
   yueLaiGroup
         .post('/todo/add', {
             deadline: dateText,
-            todoList: todoText
+            todolist: todoText
           },
           {
             headers: {
@@ -389,6 +389,7 @@ function addTodo() {
         .finally(() => {
           todoInput.focus();
           updateEmptyState();
+          window.location.reload();
         })
 }
 
