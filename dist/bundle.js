@@ -3738,10 +3738,10 @@ module.exports = axios;
 
 /***/ }),
 
-/***/ "./ts/main.ts":
-/*!********************!*\
-  !*** ./ts/main.ts ***!
-  \********************/
+/***/ "./ts/services/api.ts":
+/*!****************************!*\
+  !*** ./ts/services/api.ts ***!
+  \****************************/
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -3749,17 +3749,37 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.yueLaiGroup = void 0;
 const axios_1 = __importDefault(__webpack_require__(/*! axios */ "./node_modules/axios/dist/browser/axios.cjs"));
-const dom_1 = __webpack_require__(/*! ./utils/dom */ "./ts/utils/dom.ts");
-//待办提交部分
-const errorContainerDiv = (0, dom_1.$)('errorContainerDiv');
-//整个待办清单的无序列表
-const todoUl = (0, dom_1.$)('todoUl');
-const todoInput = (0, dom_1.$)('todoInput');
-const dateInput = (0, dom_1.$)('dateInput');
-const todoForm = (0, dom_1.$)('todoForm');
-//无待办状态
-const emptyDiv = (0, dom_1.$)('emptyDiv');
+//YuelaiTodo后端实例
+exports.yueLaiGroup = axios_1.default.create({
+    baseURL: 'https://demo.yuelaigroup.com:8500/api/v1',
+    timeout: 3000,
+});
+//请求拦截器，自动添加请求头的Authorization字段
+exports.yueLaiGroup.interceptors.request.use(config => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+
+/***/ }),
+
+/***/ "./ts/services/authService.ts":
+/*!************************************!*\
+  !*** ./ts/services/authService.ts ***!
+  \************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.setupAuthListeners = setupAuthListeners;
+exports.checkLoginStatus = checkLoginStatus;
+const dom_1 = __webpack_require__(/*! ../utils/dom */ "./ts/utils/dom.ts");
+const api_1 = __webpack_require__(/*! ./api */ "./ts/services/api.ts");
 //登录部分
 //用户登录按钮，不登录默认仅网页上呈现
 const openLoginBtn = (0, dom_1.$)('openLoginBtn');
@@ -3782,26 +3802,7 @@ const rememberMeContainerDiv = (0, dom_1.$)('rememberMeContainerDiv');
 //首个输入框，根据登录/注册改变
 const firstTipLabel = (0, dom_1.$)('firstTipLabel');
 const firstInput = (0, dom_1.$)('firstInput');
-//YuelaiTodo后端实例
-const yueLaiGroup = axios_1.default.create({
-    baseURL: 'https://demo.yuelaigroup.com:8500/api/v1',
-    timeout: 3000,
-});
-//事件监听器们
-document.addEventListener('DOMContentLoaded', () => {
-    //DOM加载完毕，进行初始化
-    updateEmptyState();
-    checkLoginStatus();
-    if (localStorage.getItem('token')) {
-        loadTodos();
-    }
-    else {
-        renderTodoList([]);
-    }
-    todoForm === null || todoForm === void 0 ? void 0 : todoForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        addTodo();
-    });
+function setupAuthListeners() {
     //用户登录，打开模态窗口
     openLoginBtn.addEventListener('click', () => {
         loginModalDiv.classList.remove('hidden');
@@ -3867,7 +3868,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         //分情况发送请求，是否为登录状态
         if (isLogin) {
-            yueLaiGroup
+            api_1.yueLaiGroup
                 .post('/auth/send', {
                 mail: null,
                 uuid: firstValue,
@@ -3883,7 +3884,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         else {
-            yueLaiGroup
+            api_1.yueLaiGroup
                 .post('/auth/send', {
                 mail: firstValue,
                 uuid: null,
@@ -3907,18 +3908,13 @@ document.addEventListener('DOMContentLoaded', () => {
         checkLoginStatus();
         window.location.reload();
     });
-    //回车键提交支持
-    todoInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter')
-            addTodo();
-    });
     //提交表单
     authForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const firstValue = (0, dom_1.$)('firstInput').value;
         const code = verificationCodeInput.value;
         if (isLogin) {
-            yueLaiGroup
+            api_1.yueLaiGroup
                 .post('/login', {
                 code: code,
                 uuid: firstValue,
@@ -3936,7 +3932,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         else {
-            yueLaiGroup
+            api_1.yueLaiGroup
                 .post('/register', {
                 code: code,
                 mail: firstValue,
@@ -3954,20 +3950,109 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-});
+}
 let isLogin = true;
 let countdownTimer = null;
+//再次获取验证码计时器，封装为函数
+function timer() {
+    //清除可能存在的旧计时器
+    if (countdownTimer !== null) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
+    let countdown = 60;
+    getCodeBtn.disabled = true;
+    getCodeBtn.textContent = `${countdown}秒后重新获取`;
+    const timer = setInterval(() => {
+        countdown--;
+        getCodeBtn.textContent = `${countdown}秒后重新获取`;
+        if (countdown <= 0) {
+            clearInterval(timer);
+            getCodeBtn.disabled = false;
+            getCodeBtn.textContent = '获取验证码';
+        }
+    }, 1000);
+}
+//清除定时器的函数
+function clearCountdownTimer() {
+    if (countdownTimer !== null) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
+    if (getCodeBtn) {
+        getCodeBtn.disabled = false;
+        getCodeBtn.textContent = '获取验证码';
+    }
+}
+//检查登录状态
+function checkLoginStatus() {
+    const openLoginBtn = (0, dom_1.$)('openLoginBtn');
+    const userInfo = (0, dom_1.$)('userInfo');
+    const userUuid = (0, dom_1.$)('userUuid');
+    const uuid = localStorage.getItem('uuid');
+    if (uuid) {
+        //当前localstorage存在uuid，已登录状态
+        openLoginBtn.classList.add('hidden');
+        userInfo.classList.remove('hidden');
+        userUuid.textContent = uuid;
+    }
+    else {
+        openLoginBtn.classList.remove('hidden');
+        userInfo.classList.add('hidden');
+    }
+}
+
+
+/***/ }),
+
+/***/ "./ts/services/todoService.ts":
+/*!************************************!*\
+  !*** ./ts/services/todoService.ts ***!
+  \************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.setupTodoListeners = setupTodoListeners;
+const api_1 = __webpack_require__(/*! ./api */ "./ts/services/api.ts");
+const dom_1 = __webpack_require__(/*! ../utils/dom */ "./ts/utils/dom.ts");
 //本地维护数组，作为状态管理和离线缓存
 let todos = [];
+//待办提交部分
+const errorContainerDiv = (0, dom_1.$)('errorContainerDiv');
+//整个待办清单的无序列表
+const todoUl = (0, dom_1.$)('todoUl');
+const todoInput = (0, dom_1.$)('todoInput');
+const dateInput = (0, dom_1.$)('dateInput');
+const todoForm = (0, dom_1.$)('todoForm');
+//无待办状态
+const emptyDiv = (0, dom_1.$)('emptyDiv');
+function setupTodoListeners() {
+    updateEmptyState();
+    //初始化todolist，本地存储有就从本地拉取，没有用空数组传入进行
+    if (localStorage.getItem('token')) {
+        loadTodos();
+    }
+    else {
+        renderTodoList([]);
+    }
+    //回车键提交支持
+    todoInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter')
+            addTodo();
+    });
+    //提交整个todo
+    todoForm === null || todoForm === void 0 ? void 0 : todoForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        addTodo();
+    });
+}
 //初始化todo数据
 function loadTodos() {
     const token = localStorage.getItem('token');
-    yueLaiGroup.get('/todo/my', {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    })
-        .then(res => {
+    api_1.yueLaiGroup
+        .get('/todo/my')
+        .then((res) => {
         //response正常，直接加载获取到的todo
         todos = res.data.data;
         renderTodoList(todos);
@@ -4050,14 +4135,10 @@ function addTodo() {
     dateInput.value = '';
     let token = localStorage.getItem('token');
     //发送POST请求，添加todo
-    yueLaiGroup
+    api_1.yueLaiGroup
         .post('/todo/add', {
         deadline: dateText,
-        todolist: todoText
-    }, {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
+        todolist: todoText,
     })
         .then((res) => {
         if (res.data.code !== 2000) {
@@ -4078,56 +4159,7 @@ function addTodo() {
     });
 }
 //删除待办
-function deleteTodo() {
-}
-//再次获取验证码计时器，封装为函数
-function timer() {
-    //清除可能存在的旧计时器
-    if (countdownTimer !== null) {
-        clearInterval(countdownTimer);
-        countdownTimer = null;
-    }
-    let countdown = 60;
-    getCodeBtn.disabled = true;
-    getCodeBtn.textContent = `${countdown}秒后重新获取`;
-    const timer = setInterval(() => {
-        countdown--;
-        getCodeBtn.textContent = `${countdown}秒后重新获取`;
-        if (countdown <= 0) {
-            clearInterval(timer);
-            getCodeBtn.disabled = false;
-            getCodeBtn.textContent = '获取验证码';
-        }
-    }, 1000);
-}
-//清除定时器的函数
-function clearCountdownTimer() {
-    if (countdownTimer !== null) {
-        clearInterval(countdownTimer);
-        countdownTimer = null;
-    }
-    if (getCodeBtn) {
-        getCodeBtn.disabled = false;
-        getCodeBtn.textContent = "获取验证码";
-    }
-}
-//检查登录状态
-function checkLoginStatus() {
-    const openLoginBtn = (0, dom_1.$)('openLoginBtn');
-    const userInfo = (0, dom_1.$)('userInfo');
-    const userUuid = (0, dom_1.$)('userUuid');
-    const uuid = localStorage.getItem('uuid');
-    if (uuid) {
-        //当前localstorage存在uuid，已登录状态
-        openLoginBtn.classList.add('hidden');
-        userInfo.classList.remove('hidden');
-        userUuid.textContent = uuid;
-    }
-    else {
-        openLoginBtn.classList.remove('hidden');
-        userInfo.classList.add('hidden');
-    }
-}
+function deleteTodo() { }
 //检查当前todo列表是否为空,每次对于DOM的调整都需要调用进行判断
 function updateEmptyState() {
     if (todoUl.querySelectorAll('li').length === 0) {
@@ -4225,12 +4257,27 @@ function $(id) {
 /******/ 	})();
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__("./ts/main.ts");
-/******/ 	
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
+var exports = __webpack_exports__;
+/*!********************!*\
+  !*** ./ts/main.ts ***!
+  \********************/
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const todoService_1 = __webpack_require__(/*! ./services/todoService */ "./ts/services/todoService.ts");
+const authService_1 = __webpack_require__(/*! ./services/authService */ "./ts/services/authService.ts");
+const authService_2 = __webpack_require__(/*! ./services/authService */ "./ts/services/authService.ts");
+document.addEventListener('DOMContentLoaded', () => {
+    //DOM加载完毕，进行初始化
+    (0, todoService_1.setupTodoListeners)();
+    (0, authService_1.setupAuthListeners)();
+    (0, authService_2.checkLoginStatus)();
+});
+
+})();
+
 /******/ })()
 ;
 //# sourceMappingURL=bundle.js.map
