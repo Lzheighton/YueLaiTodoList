@@ -4153,10 +4153,7 @@ function addTodo() {
                 ':' +
                 res.data.message);
         }
-        todos = res.data.data;
-        console.log(todos);
-        localStorage.setItem('todos', JSON.stringify(todos));
-        renderTodoList(todos);
+        loadTodos();
     })
         .finally(() => {
         todoInput.focus();
