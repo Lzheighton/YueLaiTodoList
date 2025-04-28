@@ -72,6 +72,9 @@ function renderTodoList(todos: todo[]): void {
     const todoItem = document.createElement('li');
     todoItem.className = 'flex justify-between items-center px-6 py-4';
 
+    //使用dataset设定id
+    todoItem.dataset.id = todos[i].id.toString();
+
     //左侧，待办内容
     const todoSpan = document.createElement('span');
     todoSpan.textContent = todoText;
@@ -95,8 +98,12 @@ function renderTodoList(todos: todo[]): void {
       'bg-blue-500 hover:bg-red-500 text-white font-bold py-1 px-3 rounded transition duration-200';
     todoDiv.appendChild(deleteBtn);
 
-    deleteBtn.addEventListener('click', () => {
-      deleteTodo();
+    deleteBtn.addEventListener('click', (e) => {
+      const li = (e.target as HTMLElement).closest('li');
+      //从dataset属性中获取id
+      if(li && li.dataset.id){
+        deleteTodo(parseInt(li.dataset.id));
+      }
     });
 
     todoUl.appendChild(todoItem);
@@ -167,12 +174,24 @@ function addTodo() {
     .finally(() => {
       todoInput.focus();
       updateEmptyState();
-      window.location.reload();
     });
 }
 
 //删除待办
-function deleteTodo() {}
+function deleteTodo(id: number):void {
+  yueLaiGroup.post('/todo/del', { id })
+  .then(res => {
+    if(res.data.code === 2000){
+      loadTodos();
+    }else{
+      alert('删除请求出现错误！请反馈管理员，有效的错误信息：' + 
+        res.data.code +
+          ':' +
+        res.data.message
+      );
+    }
+  })
+}
 
 //检查当前todo列表是否为空,每次对于DOM的调整都需要调用进行判断
 function updateEmptyState() {
