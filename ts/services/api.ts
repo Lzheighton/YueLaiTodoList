@@ -1,4 +1,5 @@
-import axios from 'axios'
+import { AxiosStatic } from "axios";
+declare const axios:AxiosStatic;
 
 //YuelaiTodo后端实例
 export const yueLaiGroup = axios.create({
