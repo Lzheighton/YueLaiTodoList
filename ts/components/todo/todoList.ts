@@ -25,7 +25,7 @@ export class TodoComponent {
   async setupTodoListeners() {
     this.updateEmptyState();
 
-    //初始化todolist，本地存储有就从本地拉取，没有用空数组传入进行
+    //初始化todolist，本地存储有就从本地拉取，没有用空数组传入渲染
     if (localStorage.getItem('token')) {
       const todos = await this.TodoService.loadTodos();
       this.renderTodoList(todos);
@@ -38,7 +38,7 @@ export class TodoComponent {
       if (e.key === 'Enter') this.addTodo();
     });
 
-    //提交整个todo
+    //监听默认提交行为，阻止原生表单提交
     this.todoForm?.addEventListener('submit', (e) => {
       e.preventDefault();
       this.addTodo();
@@ -80,7 +80,7 @@ export class TodoComponent {
       const todos = await this.TodoService.loadTodos();
       this.renderTodoList(todos);
     } catch (e: any) {
-      this.showError(e.message);
+      alert(e.message);
     }
 
     //todo 输入框刷新
@@ -89,6 +89,8 @@ export class TodoComponent {
   }
 
   //通过传入todo数组刷新当前页面的todolist
+
+  //? 每次刷新都需要清空无序列表并从数组重新加载li列表项
   renderTodoList(todos: todo[]):void{
     this.todoUl.innerHTML = '';
 
@@ -141,7 +143,7 @@ export class TodoComponent {
             const todos = await this.TodoService.loadTodos();
             this.renderTodoList(todos);
           }catch(e:any){
-            this.showError(e.message);
+            alert(e.message);
           }
           
         }

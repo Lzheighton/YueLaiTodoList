@@ -2,6 +2,228 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./ts/components/auth/authComponent.ts":
+/*!*********************************************!*\
+  !*** ./ts/components/auth/authComponent.ts ***!
+  \*********************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AuthComponent = void 0;
+const dom_1 = __webpack_require__(/*! ../../utils/dom */ "./ts/utils/dom.ts");
+const auth_1 = __webpack_require__(/*! ../../models/auth */ "./ts/models/auth.ts");
+class AuthComponent {
+    constructor(authService) {
+        this.currentMode = auth_1.AuthMode.LOGIN;
+        this.countdownTimer = null;
+        // DOM元素引用
+        this.modal = (0, dom_1.$)('loginModalDiv');
+        this.closeButton = (0, dom_1.$)('closeModalDiv');
+        this.loginTab = (0, dom_1.$)('loginTabBtn');
+        this.registerTab = (0, dom_1.$)('registerTabBtn');
+        this.form = (0, dom_1.$)('authForm');
+        this.firstInput = (0, dom_1.$)('firstInput');
+        this.firstLabel = (0, dom_1.$)('firstTipLabel');
+        this.codeInput = (0, dom_1.$)('verificationCodeInput');
+        this.submitBtn = (0, dom_1.$)('submitBtn');
+        this.getCodeBtn = (0, dom_1.$)('getCodeBtn');
+        this.formTitle = (0, dom_1.$)('formTitle');
+        this.rememberMeContainer = (0, dom_1.$)('rememberMeContainerDiv');
+        this.openLoginBtn = (0, dom_1.$)('openLoginBtn');
+        this.userInfo = (0, dom_1.$)('userInfo');
+        this.userUuid = (0, dom_1.$)('userUuid');
+        this.logoutBtn = (0, dom_1.$)('logoutBtn');
+        this.authService = authService;
+        this.initializeEventListeners();
+        this.updateLoginStatus();
+    }
+    initializeEventListeners() {
+        // 打开登录模态框
+        this.openLoginBtn.addEventListener('click', () => this.openModal());
+        // 关闭模态框
+        this.closeButton.addEventListener('click', () => this.closeModal());
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal)
+                this.closeModal();
+        });
+        // 切换登录/注册模式
+        this.loginTab.addEventListener('click', () => this.setAuthMode(auth_1.AuthMode.LOGIN));
+        this.registerTab.addEventListener('click', () => this.setAuthMode(auth_1.AuthMode.REGISTER));
+        // 获取验证码
+        this.getCodeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.requestVerificationCode();
+        });
+        // 提交认证表单
+        this.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.submitAuthForm();
+        });
+        // 登出
+        this.logoutBtn.addEventListener('click', () => this.logout());
+    }
+    // 设置认证模式（登录/注册）
+    setAuthMode(mode) {
+        this.currentMode = mode;
+        if (mode === auth_1.AuthMode.LOGIN) {
+            // 更新UI为登录模式
+            this.loginTab.classList.add('border-b-2', 'border-blue-500', 'text-blue-600');
+            this.registerTab.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
+            this.registerTab.classList.add('text-gray-500');
+            this.formTitle.textContent = '登录到悦来待办';
+            this.submitBtn.textContent = '登录';
+            this.firstLabel.textContent = '用户uuid';
+            this.firstInput.placeholder = '请输入用户uuid';
+            this.rememberMeContainer.classList.remove('hidden');
+        }
+        else {
+            // 更新UI为注册模式
+            this.registerTab.classList.add('border-b-2', 'border-blue-500', 'text-blue-600');
+            this.loginTab.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
+            this.loginTab.classList.add('text-gray-500');
+            this.formTitle.textContent = '加入悦来待办';
+            this.submitBtn.textContent = '注册';
+            this.firstLabel.textContent = '邮箱地址';
+            this.firstInput.placeholder = '请输入邮箱地址';
+            this.rememberMeContainer.classList.add('hidden');
+        }
+    }
+    // 请求验证码
+    requestVerificationCode() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const identifier = this.firstInput.value;
+            // 验证输入
+            if (!this.validateIdentifier(identifier)) {
+                return;
+            }
+            try {
+                yield this.authService.sendVerificationCode(this.currentMode, identifier);
+                this.startCountdown();
+            }
+            catch (error) {
+                alert(`验证码请求失败：${error instanceof Error ? error.message : '未知错误'}`);
+            }
+        });
+    }
+    // 验证标识符(邮箱或UUID)
+    validateIdentifier(identifier) {
+        if (this.currentMode === auth_1.AuthMode.LOGIN) {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (!identifier || !uuidRegex.test(identifier)) {
+                alert('请输入有效的uuid');
+                return false;
+            }
+        }
+        else {
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!identifier || !emailRegex.test(identifier)) {
+                alert('请输入有效的邮箱地址');
+                return false;
+            }
+        }
+        return true;
+    }
+    // 提交认证表单
+    submitAuthForm() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const identifier = this.firstInput.value;
+            const code = this.codeInput.value;
+            if (!code) {
+                alert('请输入验证码');
+                return;
+            }
+            try {
+                let authData;
+                if (this.currentMode === auth_1.AuthMode.LOGIN) {
+                    authData = yield this.authService.login(identifier, code);
+                }
+                else {
+                    authData = yield this.authService.register(identifier, code);
+                }
+                // 保存用户信息
+                localStorage.setItem('token', authData.token);
+                localStorage.setItem('uuid', authData.uuid);
+                // 刷新页面以应用登录状态
+                window.location.reload();
+            }
+            catch (error) {
+                alert(`${this.currentMode === auth_1.AuthMode.LOGIN ? '登录' : '注册'}失败：${error instanceof Error ? error.message : '未知错误'}`);
+            }
+        });
+    }
+    // 登出
+    logout() {
+        this.authService.logout();
+        this.updateLoginStatus();
+        window.location.reload();
+    }
+    // 开始倒计时
+    startCountdown() {
+        // 清除之前的倒计时
+        this.clearCountdown();
+        let countdown = 60;
+        this.getCodeBtn.disabled = true;
+        this.getCodeBtn.textContent = `${countdown}秒后重新获取`;
+        this.countdownTimer = window.setInterval(() => {
+            countdown--;
+            this.getCodeBtn.textContent = `${countdown}秒后重新获取`;
+            if (countdown <= 0) {
+                this.clearCountdown();
+            }
+        }, 1000);
+    }
+    // 清除倒计时
+    clearCountdown() {
+        if (this.countdownTimer) {
+            clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
+        }
+        this.getCodeBtn.disabled = false;
+        this.getCodeBtn.textContent = '获取验证码';
+    }
+    // 打开模态框
+    openModal() {
+        this.modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        this.setAuthMode(auth_1.AuthMode.LOGIN); // 默认显示登录界面
+    }
+    // 关闭模态框
+    closeModal() {
+        this.modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        this.clearCountdown();
+        this.form.reset(); // 清空表单
+    }
+    // 更新登录状态
+    updateLoginStatus() {
+        const isLoggedIn = this.authService.isLoggedIn();
+        const uuid = localStorage.getItem('uuid');
+        if (isLoggedIn && uuid) {
+            this.openLoginBtn.classList.add('hidden');
+            this.userInfo.classList.remove('hidden');
+            this.userUuid.textContent = uuid;
+        }
+        else {
+            this.openLoginBtn.classList.remove('hidden');
+            this.userInfo.classList.add('hidden');
+        }
+    }
+}
+exports.AuthComponent = AuthComponent;
+
+
+/***/ }),
+
 /***/ "./ts/components/todo/todoList.ts":
 /*!****************************************!*\
   !*** ./ts/components/todo/todoList.ts ***!
@@ -42,7 +264,7 @@ class TodoComponent {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             this.updateEmptyState();
-            //初始化todolist，本地存储有就从本地拉取，没有用空数组传入进行
+            //初始化todolist，本地存储有就从本地拉取，没有用空数组传入渲染
             if (localStorage.getItem('token')) {
                 const todos = yield this.TodoService.loadTodos();
                 this.renderTodoList(todos);
@@ -55,7 +277,7 @@ class TodoComponent {
                 if (e.key === 'Enter')
                     this.addTodo();
             });
-            //提交整个todo
+            //监听默认提交行为，阻止原生表单提交
             (_a = this.todoForm) === null || _a === void 0 ? void 0 : _a.addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.addTodo();
@@ -96,7 +318,7 @@ class TodoComponent {
                 this.renderTodoList(todos);
             }
             catch (e) {
-                this.showError(e.message);
+                alert(e.message);
             }
             //todo 输入框刷新
             this.todoInput.value = '';
@@ -104,6 +326,7 @@ class TodoComponent {
         });
     }
     //通过传入todo数组刷新当前页面的todolist
+    //? 每次刷新都需要清空无序列表并从数组重新加载li列表项
     renderTodoList(todos) {
         this.todoUl.innerHTML = '';
         if (todos.length === 0) {
@@ -148,7 +371,7 @@ class TodoComponent {
                         this.renderTodoList(todos);
                     }
                     catch (e) {
-                        this.showError(e.message);
+                        alert(e.message);
                     }
                 }
             }));
@@ -196,6 +419,26 @@ exports.TodoComponent = TodoComponent;
 
 /***/ }),
 
+/***/ "./ts/models/auth.ts":
+/*!***************************!*\
+  !*** ./ts/models/auth.ts ***!
+  \***************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+//用户登录/注册部分的TS模型
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AuthMode = void 0;
+//用于判断模态窗口登录还是注册
+var AuthMode;
+(function (AuthMode) {
+    AuthMode["LOGIN"] = "login";
+    AuthMode["REGISTER"] = "register";
+})(AuthMode || (exports.AuthMode = AuthMode = {}));
+
+
+/***/ }),
+
 /***/ "./ts/services/api.ts":
 /*!****************************!*\
   !*** ./ts/services/api.ts ***!
@@ -226,235 +469,91 @@ exports.yueLaiGroup.interceptors.request.use(config => {
 /*!************************************!*\
   !*** ./ts/services/authService.ts ***!
   \************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.setupAuthListeners = setupAuthListeners;
-exports.checkLoginStatus = checkLoginStatus;
-const dom_1 = __webpack_require__(/*! ../utils/dom */ "./ts/utils/dom.ts");
+exports.AuthService = void 0;
 const api_1 = __webpack_require__(/*! ./api */ "./ts/services/api.ts");
-//登录部分
-//用户登录按钮，不登录默认仅网页上呈现
-const openLoginBtn = (0, dom_1.$)('openLoginBtn');
-//模态窗口
-const loginModalDiv = (0, dom_1.$)('loginModalDiv');
-const closeModalDiv = (0, dom_1.$)('closeModalDiv');
-//登录表单
-const authForm = (0, dom_1.$)('authForm');
-const formTitle = (0, dom_1.$)('formTitle');
-//登录和注册分页按钮
-const loginTabBtn = (0, dom_1.$)('loginTabBtn');
-const registerTabBtn = (0, dom_1.$)('registerTabBtn');
-//确认,接受验证码按钮
-const submitBtn = (0, dom_1.$)('submitBtn');
-const getCodeBtn = (0, dom_1.$)('getCodeBtn');
-const verificationCodeInput = (0, dom_1.$)('verificationCodeInput');
-//记住我
-//todo 激活js长轮询保持登录状态
-const rememberMeContainerDiv = (0, dom_1.$)('rememberMeContainerDiv');
-//首个输入框，根据登录/注册改变
-const firstTipLabel = (0, dom_1.$)('firstTipLabel');
-const firstInput = (0, dom_1.$)('firstInput');
-function setupAuthListeners() {
-    //用户登录，打开模态窗口
-    openLoginBtn.addEventListener('click', () => {
-        loginModalDiv.classList.remove('hidden');
-        //overflow-hidden,原子类特殊属性，用于控制元素内容超出其容器边界时的行为
-        //防止用户在打开模态窗口时滚动背景内容
-        document.body.classList.add('overflow-hidden');
-    });
-    //关闭模态窗口
-    closeModalDiv.addEventListener('click', () => {
-        loginModalDiv.classList.add('hidden');
-        document.body.classList.remove('overflow-hidden');
-        clearCountdownTimer();
-    });
-    //点击背景时关闭模态窗口
-    loginModalDiv.addEventListener('click', (e) => {
-        if (e.target === loginModalDiv) {
-            loginModalDiv.classList.add('hidden');
-            document.body.classList.remove('overflow-hidden');
-        }
-        clearCountdownTimer();
-    });
-    //切换到登录页
-    loginTabBtn.addEventListener('click', function () {
-        loginTabBtn.classList.add('border-b-2', 'border-blue-500', 'text-blue-600');
-        registerTabBtn.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
-        registerTabBtn.classList.add('text-gray-500');
-        isLogin = true;
-        formTitle.textContent = '登录到悦来待办';
-        submitBtn.textContent = '登录';
-        firstTipLabel.textContent = '用户uuid';
-        firstInput.placeholder = '请输入用户uuid';
-        rememberMeContainerDiv.classList.remove('hidden');
-    });
-    //切换到注册页面
-    registerTabBtn.addEventListener('click', () => {
-        registerTabBtn.classList.add('border-b-2', 'border-blue-500', 'text-blue-600');
-        loginTabBtn.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
-        loginTabBtn.classList.add('text-gray-500');
-        isLogin = false;
-        formTitle.textContent = '加入悦来待办';
-        submitBtn.textContent = '注册';
-        firstTipLabel.textContent = '邮箱地址';
-        firstInput.placeholder = '请输入邮箱地址';
-        rememberMeContainerDiv.classList.add('hidden');
-    });
-    //发送验证码
-    getCodeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const firstValue = (0, dom_1.$)('firstInput').value;
-        if (isLogin) {
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-            if (!firstValue || !uuidRegex.test(firstValue)) {
-                alert('请输入有效的uuid');
-                return;
+const auth_1 = __webpack_require__(/*! ../models/auth */ "./ts/models/auth.ts");
+class AuthService {
+    //发送验证码,分情况发送请求，是否为登录状态
+    sendVerificationCode(mode, identifier) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (mode === auth_1.AuthMode.LOGIN) {
+                api_1.yueLaiGroup
+                    .post('/auth/send', {
+                    mail: null,
+                    uuid: identifier,
+                })
+                    .then((res) => {
+                    if (res.data.code !== 2000) {
+                        throw new Error('登录过程出现问题！' + res.data.code + ':' + res.data.message);
+                    }
+                });
             }
-        }
-        else {
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!firstValue || !emailRegex.test(firstValue)) {
-                alert('请输入有效的邮箱地址');
-                return;
+            else {
+                api_1.yueLaiGroup
+                    .post('/auth/send', {
+                    mail: identifier,
+                    uuid: null,
+                })
+                    .then((res) => {
+                    if (res.data.code !== 2000) {
+                        throw new Error('注册过程出现问题！' + res.data.code + ':' + res.data.message);
+                    }
+                });
             }
-        }
-        //分情况发送请求，是否为登录状态
-        if (isLogin) {
-            api_1.yueLaiGroup
-                .post('/auth/send', {
-                mail: null,
-                uuid: firstValue,
-            })
-                .then((res) => {
-                timer();
-                if (res.data.code !== 2000) {
-                    alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' +
-                        res.data.code +
-                        ':' +
-                        res.data.message);
-                }
-            });
-        }
-        else {
-            api_1.yueLaiGroup
-                .post('/auth/send', {
-                mail: firstValue,
-                uuid: null,
-            })
-                .then((res) => {
-                timer();
-                if (res.data.code !== 2000) {
-                    alert('验证码请求出现错误！请反馈管理员，有效的错误信息：' +
-                        res.data.code +
-                        ':' +
-                        res.data.message);
-                }
-            });
-        }
-    });
-    //登出当前用户
-    (0, dom_1.$)('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('uuid');
-        localStorage.removeItem('token');
-        //更新登录状态
-        checkLoginStatus();
-        window.location.reload();
-    });
-    //提交表单
-    authForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const firstValue = (0, dom_1.$)('firstInput').value;
-        const code = verificationCodeInput.value;
-        if (isLogin) {
-            api_1.yueLaiGroup
+        });
+    }
+    login(uuid, code) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return api_1.yueLaiGroup
                 .post('/login', {
                 code: code,
-                uuid: firstValue,
+                uuid: uuid,
             })
                 .then((res) => {
                 if (res.data.code !== 2000) {
-                    alert('登录请求出现错误！请反馈管理员，有效的错误信息：' +
-                        res.data.code +
-                        ':' +
-                        res.data.message);
+                    throw new Error('登录过程出现问题！' + res.data.code + ':' + res.data.message);
                 }
-                localStorage.setItem('token', res.data.data.token);
-                localStorage.setItem('uuid', res.data.data.uuid);
-                window.location.reload();
+                return res.data.data;
             });
-        }
-        else {
-            api_1.yueLaiGroup
+        });
+    }
+    register(mail, code) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return api_1.yueLaiGroup
                 .post('/register', {
                 code: code,
-                mail: firstValue,
+                mail: mail,
             })
                 .then((res) => {
                 if (res.data.code !== 2000) {
-                    alert('注册请求出现错误！请反馈管理员，有效的错误信息：' +
-                        res.data.code +
-                        ':' +
-                        res.data.message);
+                    throw new Error('注册过程出现问题！' + res.data.code + ':' + res.data.message);
                 }
-                localStorage.setItem('token', res.data.data.token);
-                localStorage.setItem('uuid', res.data.data.uuid);
-                window.location.reload();
+                return res.data.data;
             });
-        }
-    });
-}
-let isLogin = true;
-let countdownTimer = null;
-//再次获取验证码计时器，封装为函数
-function timer() {
-    //清除可能存在的旧计时器
-    if (countdownTimer !== null) {
-        clearInterval(countdownTimer);
-        countdownTimer = null;
+        });
     }
-    let countdown = 60;
-    getCodeBtn.disabled = true;
-    getCodeBtn.textContent = `${countdown}秒后重新获取`;
-    const timer = setInterval(() => {
-        countdown--;
-        getCodeBtn.textContent = `${countdown}秒后重新获取`;
-        if (countdown <= 0) {
-            clearInterval(timer);
-            getCodeBtn.disabled = false;
-            getCodeBtn.textContent = '获取验证码';
-        }
-    }, 1000);
-}
-//清除定时器的函数
-function clearCountdownTimer() {
-    if (countdownTimer !== null) {
-        clearInterval(countdownTimer);
-        countdownTimer = null;
+    isLoggedIn() {
+        return Boolean(localStorage.getItem('token') && localStorage.getItem('uuid'));
     }
-    if (getCodeBtn) {
-        getCodeBtn.disabled = false;
-        getCodeBtn.textContent = '获取验证码';
+    logout() {
+        localStorage.removeItem('uuid');
+        localStorage.removeItem('token');
     }
 }
-//检查登录状态
-function checkLoginStatus() {
-    const openLoginBtn = (0, dom_1.$)('openLoginBtn');
-    const userInfo = (0, dom_1.$)('userInfo');
-    const userUuid = (0, dom_1.$)('userUuid');
-    const uuid = localStorage.getItem('uuid');
-    if (uuid) {
-        //当前localstorage存在uuid，已登录状态
-        openLoginBtn.classList.add('hidden');
-        userInfo.classList.remove('hidden');
-        userUuid.textContent = uuid;
-    }
-    else {
-        openLoginBtn.classList.remove('hidden');
-        userInfo.classList.add('hidden');
-    }
-}
+exports.AuthService = AuthService;
 
 
 /***/ }),
@@ -576,18 +675,18 @@ var exports = __webpack_exports__;
   \********************/
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const authService_1 = __webpack_require__(/*! ./services/authService */ "./ts/services/authService.ts");
-const authService_2 = __webpack_require__(/*! ./services/authService */ "./ts/services/authService.ts");
 const todoService_1 = __webpack_require__(/*! ./services/todoService */ "./ts/services/todoService.ts");
+const authService_1 = __webpack_require__(/*! ./services/authService */ "./ts/services/authService.ts");
 const todoList_1 = __webpack_require__(/*! ./components/todo/todoList */ "./ts/components/todo/todoList.ts");
+const authComponent_1 = __webpack_require__(/*! ./components/auth/authComponent */ "./ts/components/auth/authComponent.ts");
 document.addEventListener('DOMContentLoaded', () => {
     //DOM加载完毕，进行初始化
     //初始化服务层
     const todoService = new todoService_1.TodoService();
+    const authService = new authService_1.AuthService();
     //初始化组件
+    const authComponent = new authComponent_1.AuthComponent(authService);
     const todoComponent = new todoList_1.TodoComponent();
-    (0, authService_1.setupAuthListeners)();
-    (0, authService_2.checkLoginStatus)();
 });
 
 })();
